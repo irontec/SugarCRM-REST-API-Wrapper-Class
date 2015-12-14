@@ -29,19 +29,19 @@ Contents
 ----------------------------
 Edit composer.json
 
-	{
-	   "repositories": [
+    {
+       "repositories": [
             {
                 "type":"vcs",
                 "url": "https://github.com/irontec/SugarCRM-REST-API-Wrapper-Class"
             }
         ],
-		"require": {
-			"irontec/sugarcrm-wrapper": "dev-master"
-		},
-		"minimum-stability": "dev",
-       "prefer-stable" : true
-	}
+        "require": {
+            "irontec/sugarcrm-wrapper": "dev-master"
+        },
+        "minimum-stability": "dev",
+        "prefer-stable" : true
+    }
 
 Then install with composer
 
