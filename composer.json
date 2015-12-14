@@ -2,7 +2,7 @@
     "name": "irontec/asakusuma-sugarcrm-wrapper",
     "description": "SugarCRM REST API Wrapper Class",
     "keywords": ["SugarCRM", "REST", "Wrapper"],
-    "homepage": "http://github.com/asakusuma/SugarCRM-REST-API-Wrapper-Class/",
+    "homepage": "https://github.com/irontec/SugarCRM-REST-API-Wrapper-Class/",
     "type": "library",
     "license": "MIT",
     "authors": [
