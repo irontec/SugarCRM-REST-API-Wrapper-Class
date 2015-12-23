@@ -876,4 +876,89 @@ class Rest
 
         return $result;
     }
+    
+    /**
+     * Retrieves Sugar Bean records. This method makes a call to a custom 
+     * function from a custom API. Allows to give the name of the function.
+     *
+     * @param string $custom_call the name of the function of the SugarCRM's
+     *                       API to call.
+     * @param string $module the SugarCRM module name. Usually first letter
+     *                       capitalized. This is the name of the base module.
+     *                       In other words, any other modules involved in the
+     *                       query will be related to the given base module.
+     * @param array $fields  the fields you want to retrieve, based on the
+     *                       module:
+     * <pre>
+     *                       array(
+     *                           'Cases' => array(
+     *                               'field_name',
+     *                               'some_other_field_name'
+     *                           ),
+     *                           'Accounts' => array(
+     *                               'field_name',
+     *                               'some_other_field_name'
+     *                           )
+     *                       )
+     * </pre>
+     * @param array $options Lets you set options for the query
+     * <pre>
+     * $options['limit'] = Limit how many records returned
+     * $options['offset'] = Query offset
+     * $options['where'] = WHERE clause for an SQL statement
+     * $options['order_by'] = ORDER BY clause for an SQL statement
+     * </pre>
+     * @return array
+     */
+    public function get_custom($custom_call, $module, $fields, $options = array())
+    {
+        if (sizeof($fields) < 1) {
+            return FALSE;
+        }
+        if (!isset($fields[$module])) {
+            return FALSE;
+        }
+    
+        //Set the defaults for the options
+        $options = array_merge(
+                array(
+                        'limit'    => 20,
+                        'offset'   => 0,
+                        'where'    => null,
+                        'order_by' => null,
+                ),
+                $options
+        );
+    
+        $base_fields = $fields[$module];
+        unset($fields[$module]);
+    
+        $relationships = array();
+    
+        foreach ($fields as $related_module => $fields_list) {
+            $relationships[] = array(
+                    'name' => strtolower($related_module),
+                    'value' => $fields_list
+            );
+        }
+    
+        $call_arguments = array(
+                'session' => $this->session,
+                'module_name' => $module,
+                'query' => $options['where'],
+                'order_by' => $options['order_by'],
+                'offset' => $options['offset'],
+                'select_fields' => $base_fields,
+                'link_name_to_fields_array' => $relationships,
+                'max_results' => $options['limit'],
+                'deleted' => false
+        );
+    
+        $result = $this->rest_request(
+                $custom_call,
+                $call_arguments
+        );
+    
+        return $result;
+    }
 }
