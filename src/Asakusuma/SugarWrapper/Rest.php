@@ -289,6 +289,11 @@ class Rest
      */
     private function rest_request($call_name, $call_arguments)
     {
+        if (!$this->logged_in && $call_name != 'login') {
+            $this->connect();
+            $call_arguments['session'] = $this->session;
+        }
+        
         $request = $this->getCurl();
         $request->addData(
             array(
