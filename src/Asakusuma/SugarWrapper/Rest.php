@@ -72,6 +72,13 @@ class Rest
     private $request;
 
     /**
+     * The cache where the SuiteCRM session is stored
+     *
+     * @var Zend_Cache
+     */
+    private $cache;
+
+    /**
      * Set the url
      *
      * @param string $url
@@ -111,6 +118,19 @@ class Rest
     }
 
     /**
+     * Set the cache
+     *
+     * @param Zend_Cache $url
+     * @return \Asakusuma\SugarWrapper\Rest
+     */
+    public function setCache($cache = null)
+    {
+        $this->cache = $cache;
+    
+        return $this;
+    }
+
+    /**
      * Get logged-in user information
      */
     public function loggedInUserInfo()
@@ -129,25 +149,32 @@ class Rest
      */
     function connect($rest_url = null, $username = null, $password = null, $md5_password = true)
     {
-        if (!is_null($rest_url)) {
-            $this->rest_url = $rest_url;
-        }
-
-        if (!is_null($username)) {
-            $this->username = $username;
-        }
-
-        if (!is_null($password)) {
-            $this->password = $password;
-        }
-
-        $this->logged_in = FALSE;
-
-        if ($this->login($md5_password)) {
+        if ($this->cache && ($this->session  = $this->cache->load('suiteSession'))) {
             $this->logged_in = TRUE;
-            $data['session'] = $this->session;
         }
-
+        if (!$this->logged_in) {
+        
+            if (!is_null($rest_url)) {
+                $this->rest_url = $rest_url;
+            }
+    
+            if (!is_null($username)) {
+                $this->username = $username;
+            }
+    
+            if (!is_null($password)) {
+                $this->password = $password;
+            }
+    
+            $this->logged_in = FALSE;
+    
+            if ($this->login($md5_password)) {
+                $this->logged_in = TRUE;
+                if ($this->cache) {
+                    $this->cache->save($this->session, 'suiteSession');
+                }
+            }
+        }
         return $this->logged_in;
     }
 
@@ -290,7 +317,13 @@ class Rest
     private function rest_request($call_name, $call_arguments)
     {
         if (!$this->logged_in && $call_name != 'login') {
-            $this->connect();
+            try {
+                if (!$this->connect()) {
+                    return array();
+                }
+            } catch(\Exception $e) {
+                throw $e;
+            }
             $call_arguments['session'] = $this->session;
         }
         
@@ -303,12 +336,19 @@ class Rest
                 'rest_data' => json_encode($call_arguments)
             )
         );
+
         if($call_name == 'set_entry') {
             $request->addHeaders(array('Expect'=>' '));
         }
 
         $output = $request->post();
         $response_data = json_decode(html_entity_decode($output['body']), true);
+        
+        if (isset($response_data['number'])&& ($response_data['number'] == 11) && ($this->cache)) {
+            $this->cache->remove('suiteSession');
+            $this->logged_in = FALSE;
+            $response_data = $this->rest_request($call_name, $call_arguments);
+        }
 
         return $response_data;
     }
@@ -917,6 +957,8 @@ class Rest
      */
     public function get_custom($custom_call, $module, $fields, $options = array())
     {
+        
+        
         if (sizeof($fields) < 1) {
             return FALSE;
         }
@@ -958,11 +1000,33 @@ class Rest
                 'max_results' => $options['limit'],
                 'deleted' => false
         );
-    
         $result = $this->rest_request(
                 $custom_call,
                 $call_arguments
         );
+            
+        return $result;
+    }
+    
+    /**
+     * Retrieves Sugar Bean records. This method makes a call to a custom
+     * function from a custom API that does not keep the SuiteCRM format.
+     * This means that the arguments of the function are different from the
+     * usuals ones.
+     *
+     * @param string $custom_call the name of the function of the SugarCRM's
+     *                       API to call.
+     * @param array $call_arguments  the arguments the call must receive
+     * @return array
+     */
+    public function get_custom_arguments($custom_call, $call_arguments = array())
+    {
+        // la sesión tiene que ser el primer parámetro
+        $call_arguments = array('session' => $this->session) + $call_arguments;
+        $result = $this->rest_request(
+                $custom_call,
+                $call_arguments
+                );
     
         return $result;
     }
