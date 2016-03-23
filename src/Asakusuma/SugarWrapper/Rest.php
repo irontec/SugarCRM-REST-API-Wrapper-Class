@@ -79,6 +79,13 @@ class Rest
     private $cache;
 
     /**
+     * If true, the logout would never be done. Useful when using a cache to store the session.
+     *
+     * @var Boolean
+     */
+    private $logout = true;
+    
+    /**
      * Set the url
      *
      * @param string $url
@@ -120,12 +127,25 @@ class Rest
     /**
      * Set the cache
      *
-     * @param Zend_Cache $url
+     * @param Zend_Cache $cache
      * @return \Asakusuma\SugarWrapper\Rest
      */
     public function setCache($cache = null)
     {
         $this->cache = $cache;
+    
+        return $this;
+    }
+
+    /**
+     * Set the logout
+     *
+     * @param boolean $logout
+     * @return \Asakusuma\SugarWrapper\Rest
+     */
+    public function setLogout($logout = true)
+    {
+        $this->logout = $logout;
     
         return $this;
     }
@@ -778,7 +798,7 @@ class Rest
      */
     function __destruct()
     {
-        if ($this->logged_in) {
+        if ($this->logged_in && $this->logout) {
             $l = $this->rest_request(
                 'logout', array(
                     'session' => $this->session
