@@ -369,7 +369,7 @@ class Rest
             $body = $bodyParts[1];
         }
         
-        $response_data = json_decode(html_entity_decode($output['body']), true);
+        $response_data = json_decode(html_entity_decode($body), true);
         
         if (isset($response_data['number'])&& ($response_data['number'] == 11) && ($this->cache)) {
             $this->cache->remove('suiteSession');
